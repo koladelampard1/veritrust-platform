@@ -45,7 +45,7 @@ begin
  on conflict(bucket,window_start) do update set requests=public.consumer_rate_windows.requests+1
  returning requests into v_count;
  if v_count>case when p_action='verify' then 20 else 5 end then
-  raise exception 'Rate limit exceeded' using errcode='P0001';
+  return false;
  end if;
  v_start:=to_timestamp(floor(extract(epoch from clock_timestamp())/60)*60);
  v_bucket:='global:'||p_action;
@@ -54,10 +54,10 @@ begin
  on conflict(bucket,window_start) do update set requests=public.consumer_rate_windows.requests+1
  returning requests into v_count;
  if v_count>case when p_action='verify' then 300 else 50 end then
-  raise exception 'Rate limit exceeded' using errcode='P0001';
+  return false;
  end if;
  return true;
-end $$;
+end; $;
 
 create or replace function public.consumer_pilot_verify(p_digest text,p_client text)
 returns table(verification_state text,product_name text,manufacturer_name text,lot_code text,expires_on date)
@@ -65,7 +65,9 @@ language plpgsql security definer set search_path = ''
 as $$
 declare v_unit public.serialized_units%rowtype;v_batch public.batches%rowtype;v_product public.products%rowtype;v_mfr text;v_state text;
 begin
- perform public.consumer_pilot_limit(p_client,'verify');
+ if not public.consumer_pilot_limit(p_client,'verify') then
+ return query select 'rate_limited'::text,null::text,null::text,null::text,null::date;return;
+ end if;
  if p_digest !~ '^[a-f0-9]{64}$' then raise exception 'Invalid digest'; end if;
  select * into v_unit from public.serialized_units where serial_digest=p_digest;
  if not found then
@@ -85,14 +87,14 @@ begin
  insert into public.verification_events(unit_id,result,metadata)
  values(v_unit.id,v_state,jsonb_build_object('channel','public_pilot'));
  return query select v_state,v_product.product_name,v_mfr,v_batch.lot_code,v_batch.expires_on;
-end $$;
+end; $;
 
 create or replace function public.consumer_pilot_report(p_digest text,p_client text,p_reason text,p_details text)
 returns uuid language plpgsql security definer set search_path=''
 as $$
 declare v_unit uuid;v_id uuid;
 begin
- perform public.consumer_pilot_limit(p_client,'report');
+ if not public.consumer_pilot_limit(p_client,'report') then return null;end if;
  if p_reason not in ('suspected_tampering','altered_expiry','unexpected_packaging','adverse_effect','other')
    then raise exception 'Invalid reason';end if;
  if char_length(trim(p_details))<10 or char_length(p_details)>800 then raise exception 'Invalid description';end if;
@@ -104,7 +106,7 @@ begin
  values(v_unit,p_reason,trim(p_details),upper(substr(encode(gen_random_bytes(10),'hex'),1,16)))
  returning id into v_id;
  return v_id;
-end $$;
+end; $;
 revoke all on function public.consumer_pilot_limit(text,text),
  public.consumer_pilot_verify(text,text),public.consumer_pilot_report(text,text,text,text)
  from public,anon,authenticated;
