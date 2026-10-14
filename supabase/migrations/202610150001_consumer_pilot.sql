@@ -32,7 +32,7 @@ revoke all on public.consumer_reports from anon,authenticated;
 
 create or replace function public.consumer_pilot_limit(p_client text,p_action text)
 returns boolean language plpgsql security definer set search_path = ''
-as $$
+as $body$
 declare v_bucket text;v_start timestamptz;v_count integer;
 begin
  if char_length(p_client)<>64 or p_client !~ '^[0-9a-f]{64}$' then raise exception 'Invalid client';end if;
@@ -57,12 +57,12 @@ begin
   return false;
  end if;
  return true;
-end; $;
+end; $body$;
 
 create or replace function public.consumer_pilot_verify(p_digest text,p_client text)
 returns table(verification_state text,product_name text,manufacturer_name text,lot_code text,expires_on date)
 language plpgsql security definer set search_path = ''
-as $$
+as $body$
 declare v_unit public.serialized_units%rowtype;v_batch public.batches%rowtype;v_product public.products%rowtype;v_mfr text;v_state text;
 begin
  if not public.consumer_pilot_limit(p_client,'verify') then
@@ -87,11 +87,11 @@ begin
  insert into public.verification_events(unit_id,result,metadata)
  values(v_unit.id,v_state,jsonb_build_object('channel','public_pilot'));
  return query select v_state,v_product.product_name,v_mfr,v_batch.lot_code,v_batch.expires_on;
-end; $;
+end; $body$;
 
 create or replace function public.consumer_pilot_report(p_digest text,p_client text,p_reason text,p_details text)
 returns uuid language plpgsql security definer set search_path=''
-as $$
+as $body$
 declare v_unit uuid;v_id uuid;
 begin
  if not public.consumer_pilot_limit(p_client,'report') then return null;end if;
@@ -106,7 +106,7 @@ begin
  values(v_unit,p_reason,trim(p_details),upper(substr(encode(gen_random_bytes(10),'hex'),1,16)))
  returning id into v_id;
  return v_id;
-end; $;
+end; $body$;
 revoke all on function public.consumer_pilot_limit(text,text),
  public.consumer_pilot_verify(text,text),public.consumer_pilot_report(text,text,text,text)
  from public,anon,authenticated;
