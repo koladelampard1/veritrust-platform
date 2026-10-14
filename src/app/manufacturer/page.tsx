@@ -54,6 +54,9 @@ export default function ManufacturerPage(){
   if(!organization||!access)return;
   const result=await req('/api/v1/manufacturer/overview?organization_id='+encodeURIComponent(organization),'GET',undefined,access);
   setData(result as Overview);
+  setSelectedProduct(current=>(result.products as Product[]).some((p:Product)=>p.id===current)?current:(result.products?.[0]?.id||''));
+  setSelectedBatch(current=>(result.batches as Batch[]).some((b:Batch)=>b.id===current)?current:(result.batches?.[0]?.id||''));
+  setDestination(current=>(result.destinations as Destination[]).some((d:Destination)=>d.id===current)?current:(result.destinations?.[0]?.id||''));
  },[org,jwt,preview,req]);
  useEffect(()=>{if(!client)return;client.auth.getSession().then(async({data:s})=>{
    if(!s.session)return;
