@@ -1,0 +1,2 @@
+export type VerificationState='matched_record'|'caution'|'do_not_use'|'unverifiable'|'service_unavailable';
+export function evaluate(input:{known:boolean;expired:boolean;recalled:boolean;blocked:boolean;suspicious:boolean}):VerificationState{if(!input.known)return 'unverifiable';if(input.expired||input.recalled||input.blocked)return 'do_not_use';if(input.suspicious)return 'caution';return 'matched_record';}
