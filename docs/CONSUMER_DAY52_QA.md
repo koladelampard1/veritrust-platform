@@ -30,3 +30,21 @@
 - Plaintext QR tokens cannot be reconstructed from the registry.
 - Read-model status only. An identity match does not verify physical tamper-evidence or laboratory quality.
 - Public consumer reporting currently captures a 10–800 character description. Add privacy policy, retention rules, consent and safeguarding processes before broad field use.
+
+
+## Executed live Supabase test results
+- A recognized synthetic serial digest returned `matched_record`, product name and recorded lot through an anonymous-role gateway call with the correct server secret.
+- Invalid gateway secret was denied.
+- Unknown identifier yielded `unverifiable` rather than a counterfeit assertion.
+- Synthetic report was inserted in a transaction; the transaction was rolled back without leaving a real complaint.
+- Per-client checks 1–20 proceeded; checks 21–22 returned `rate_limited`, and the rejected calls incremented the persistent transaction counters.
+- Report crypto reference generation initially failed due a schema qualification error; repaired by migration `consumer_report_crypto_fix`.
+- A temporary diagnostic function was removed through migration `remove_diagnostic_probe`.
+- Gateway secret and database secret hash were reconciled and tested. Secret values are not committed to GitHub.
+
+## Known remaining risks
+- Full real-browser anonymous POST verification and report submission have not yet been observed by the assistant; verification to date is database-level.
+- Physical iOS/Android camera decoding remains untested. Playwright Chromium mobile emulation is scripted, not equivalent to an actual device.
+- Supabase Security Advisor flags publicly callable SECURITY DEFINER wrappers intentionally used as shared-secret gateways. A security review should consider moving this behind an Edge Function with enforced auth and private schema.
+- Requests that forge or omit edge client-attribution headers may share a fallback throttle bucket; monitor abusive traffic and validate real Vercel header handling.
+- Automatic report case triage, deletion/retention policy, privacy notice, photo intake, incident escalation and regulator integration are outstanding.
