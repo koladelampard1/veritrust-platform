@@ -44,7 +44,7 @@ begin
  values(v_bucket,v_start,1)
  on conflict(bucket,window_start) do update set requests=public.consumer_rate_windows.requests+1
  returning requests into v_count;
- if v_count>case when p_action='verify' then 20 else 5 end then
+ if (p_action='verify' and v_count>20) or (p_action='report' and v_count>5) then
   return false;
  end if;
  v_start:=to_timestamp(floor(extract(epoch from clock_timestamp())/60)*60);
@@ -53,7 +53,7 @@ begin
  values(v_bucket,v_start,1)
  on conflict(bucket,window_start) do update set requests=public.consumer_rate_windows.requests+1
  returning requests into v_count;
- if v_count>case when p_action='verify' then 300 else 50 end then
+ if (p_action='verify' and v_count>300) or (p_action='report' and v_count>50) then
   return false;
  end if;
  return true;
