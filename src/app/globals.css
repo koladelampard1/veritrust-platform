@@ -1,0 +1,2 @@
+*{box-sizing:border-box}html,body{margin:0;padding:0}body{font-family:Arial,Helvetica,sans-serif;background:#f5f8f7;color:#18332e}button,input,select{font:inherit}button{cursor:pointer}a{color:inherit} :root{--green:#087c69;--ink:#18332e;--cloud:#f4f8f6;--line:#e2eae7;--muted:#667971}
+@media print{.no-print{display:none!important}.print-area{display:block!important}.print-card{break-inside:avoid;page-break-inside:avoid;border:1px solid #cbd5d1;margin:10mm 0;padding:8mm}}
